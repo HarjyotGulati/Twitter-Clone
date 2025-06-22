@@ -65,11 +65,10 @@ export const login = async (req,res)=>{
         const isPasswordCorrect = await bcrypt.compare(password,user?.password||"");
 
         if(!user){
-            res.status(400).json({error:"Username or Password is Incorrect."});
-        
+            return res.status(400).json({error:"Username or Password is Incorrect."});
         }
         if(!isPasswordCorrect){
-            res.status(400).json({error:"Username or Password is Incorrect."});
+            return res.status(400).json({error:"Username or Password is Incorrect."});
         }
 
         generateTokenAndSetCookie(user._id,res);
@@ -99,7 +98,6 @@ export const logOut = async (req,res)=>{
         res.status(500).json({error:"Internal server error"});
     }
 }
-
 
 
 export const getAllUsers = async (req, res) => {

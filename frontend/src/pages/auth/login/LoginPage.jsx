@@ -1,27 +1,63 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 
 import XSvg from "../../../components/svgs/XSvg.jsx";
 
 import { MdOutlineMail } from "react-icons/md";
 import { MdPassword } from "react-icons/md";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 const LoginPage = () => {
 	const [formData, setFormData] = useState({
-		username: "",
+		userName: "",
 		password: "",
+	});
+	const queryClient = useQueryClient();
+
+	const {
+		mutate: loginMutation,
+		isPending,
+		isError,
+		error,
+	} = useMutation({
+		mutationFn: async ({ userName, password }) => {
+			try {
+				const res = await fetch("/api/auth/login", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ userName, password }),
+				});
+
+				const data = await res.json();
+
+				if (!res.ok) {
+					throw new Error(data.error || "Something went wrong");
+				}
+			} catch (error) {
+				throw new Error(error);
+			}
+		},
+		onSuccess: () => { 
+		queryClient.invalidateQueries({ queryKey: ["authUser"] });
+		toast.success("Logged in successfully!"); // ✅ show toast
+	    },
+	    onError: (error) => {
+		toast.error(error.message); // ✅ show toast for errors
+	},
 	});
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		console.log(formData);
+		loginMutation(formData);
 	};
 
 	const handleInputChange = (e) => {
 		setFormData({ ...formData, [e.target.name]: e.target.value });
 	};
-
-	const isError = false;
 
 	return (
 		<div className='max-w-screen-xl mx-auto flex h-screen'>
@@ -36,11 +72,11 @@ const LoginPage = () => {
 						<MdOutlineMail />
 						<input
 							type='text'
-							 className='grow bg-black text-white placeholder-gray-400 outline-none'
-							placeholder='username'
-							name='username'
+							className='bg-black'
+							placeholder='userName'
+							name='userName'
 							onChange={handleInputChange}
-							value={formData.username}
+							value={formData.userName}
 						/>
 					</label>
 
@@ -48,15 +84,17 @@ const LoginPage = () => {
 						<MdPassword />
 						<input
 							type='password'
-							 className='grow bg-black text-white placeholder-gray-400 outline-none'
+							className='bg-black'
 							placeholder='Password'
 							name='password'
 							onChange={handleInputChange}
 							value={formData.password}
 						/>
 					</label>
-					<button className='btn rounded-full btn-primary text-white'>Login</button>
-					{isError && <p className='text-red-500'>Something went wrong</p>}
+					<button className='btn rounded-full btn-primary text-white'>
+						{isPending ? "Loading..." : "Login"}
+					</button>
+					{isError && <p className='text-red-500'>{error.message}</p>}
 				</form>
 				<div className='flex flex-col gap-2 mt-4'>
 					<p className='text-white text-lg'>{"Don't"} have an account?</p>
